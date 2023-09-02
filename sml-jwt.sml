@@ -22,7 +22,7 @@ struct
   val c_jwt_dump = _import "jwt_dump_str" public : P.t * int -> P.t;
   val c_jwt_get_grant = _import "jwt_get_grant" public : P.t * string -> P.t;
   val c_jwt_get_grant_int =
-    _import "jwt_get_grant_int" public : P.t * string -> int;
+    _import "jwt_get_grant_int" public : P.t * string -> C_Long.t;
   val c_jwt_get_grant_bool =
     _import "jwt_get_grant_bool" public : P.t * string -> bool;
   val c_jwt_get_grants_json =
@@ -30,11 +30,13 @@ struct
   val c_jwt_add_grant =
     _import "jwt_add_grant" public : P.t * string * string -> int;
   val c_jwt_add_grant_int =
-    _import "jwt_add_grant_int" public : P.t * string * int -> int;
+    _import "jwt_add_grant_int" public : P.t * string * C_Long.t -> int;
   val c_jwt_add_grant_bool =
     _import "jwt_add_grant_bool" public : P.t * string * bool -> int;
   val c_jwt_add_grants_json =
     _import "jwt_add_grants_json" public : P.t * string -> int;
+  val c_errno = _import "custom_errno" public : unit -> int;
+  val ENOENT = 2
 
   fun check s ret =
     if ret <> 0 then raise JwtError (s, ret) else ()
@@ -68,11 +70,21 @@ struct
       let val p = c_jwt_get_grant (t, key)
       in if p = P.null then NONE else SOME (fetchCString p)
       end)
+  fun getGrantInt t key =
+    F.withValue (t, fn t =>
+      let val r = c_jwt_get_grant_int (t, key)
+      in if c_errno () = ENOENT then NONE else SOME (C_Long.toInt r)
+      end)
+  fun getGrantBool t key =
+    F.withValue (t, fn t =>
+      let val r = c_jwt_get_grant_bool (t, key)
+      in if c_errno () = ENOENT then NONE else SOME r
+      end)
   fun addGrant t key value =
     F.withValue (t, fn t => check "addGrant" (c_jwt_add_grant (t, key, value)))
   fun addGrantInt t key value =
     F.withValue (t, fn t =>
-      check "addGrantInt" (c_jwt_add_grant_int (t, key, value)))
+      check "addGrantInt" (c_jwt_add_grant_int (t, key, C_Long.fromInt value)))
   fun addGrantBool t key value =
     F.withValue (t, fn t =>
       check "addGrantBool" (c_jwt_add_grant_bool (t, key, value)))
@@ -93,6 +105,12 @@ local
     | showOption _ NONE = "NONE"
 in val showInt_option = showOption Int.toString
 end
+type bool_option = bool option
+local
+  fun showOption f (SOME s) = "SOME " ^ f s
+    | showOption _ NONE = "NONE"
+in val showBool_option = showOption Bool.toString
+end
 
 val jwt = Jwt.create ()
 val () = print (Jwt.show jwt ^ "\n")
@@ -100,5 +118,6 @@ val () = Jwt.addGrant jwt "hello" "world"
 val () = print (showStr_option (Jwt.getGrant jwt "hello") ^ "\n")
 val () = print (showStr_option (Jwt.getGrant jwt "world") ^ "\n")
 val () = Jwt.addGrantInt jwt "life" 42
-
-(* val () = print (showInt_option (Jwt.getGrantInt jwt "life") ^ "\n") *)
+val () = print (showInt_option (Jwt.getGrantInt jwt "life") ^ "\n")
+val () = Jwt.addGrantBool jwt "foo" true
+val () = print (showBool_option (Jwt.getGrantBool jwt "foo") ^ "\n")
