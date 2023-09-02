@@ -16,24 +16,24 @@ sig
   | TERM
 
   val create: unit -> t
+  val show: t -> string
+
+  val getGrant: t -> string -> string option
+  val getGrantInt: t -> string -> int option
+  val getGrantBool: t -> string -> bool option
+  val getGrantsJson: key -> t -> string option
+
+  val addGrant: t -> string -> string -> unit
+  val addGrantInt: t -> string -> int -> unit
+  val addGrantBool: t -> string -> bool -> unit
+  val addGrantsJson: t -> string -> unit
+
+  val delGrant: t -> string -> unit
+  val delGrants: t -> unit
+
+  val encode: t -> string
   val decode: key -> string -> t
 
-  val get_grant: t -> string -> string option
-  val get_grant_int: t -> string -> int option
-  val get_grant_bool: t -> string -> bool option
-  val get_grants_json: key -> t -> string option
-
-  val add_grant: t -> string -> string -> unit
-  val add_grant_int: t -> string -> int -> unit
-  val add_grant_bool: t -> string -> bool -> unit
-  val add_grants_json: t -> string -> unit
-
-  val del_grant: t -> string -> unit
-  val del_grants: t -> unit
-
-  val show: t -> string
-  val encode: t -> string
-
-  val set_alg: key -> t -> algorithm option -> unit
-  val get_alg: t -> algorithm option
+  val setAlg: key -> t -> algorithm option -> unit
+  val getAlg: t -> algorithm option
 end
