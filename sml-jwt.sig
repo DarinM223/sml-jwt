@@ -34,6 +34,23 @@ sig
   val encode: t -> string
   val decode: key option -> string -> t
 
-  val setAlg: key -> t -> algorithm option -> unit
+  val setAlg: t -> key option -> algorithm option -> unit
   val getAlg: t -> algorithm option
+end
+
+structure Jwt =
+struct
+  exception JwtError of string * int
+  datatype key = Key of string
+  datatype algorithm =
+    HS256
+  | HS384
+  | HS512
+  | RS256
+  | RS384
+  | RS512
+  | ES256
+  | ES384
+  | ES512
+  | TERM
 end
