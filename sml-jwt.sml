@@ -27,6 +27,8 @@ struct
     _import "jwt_get_grant_bool" public : P.t * string -> bool;
   val c_jwt_get_grants_json =
     _import "jwt_get_grants_json" public : P.t * string -> P.t;
+  val c_jwt_get_grants_json2 =
+    _import "jwt_get_grants_json" public : P.t * P.t -> P.t;
   val c_jwt_add_grant =
     _import "jwt_add_grant" public : P.t * string * string -> int;
   val c_jwt_add_grant_int =
@@ -35,6 +37,8 @@ struct
     _import "jwt_add_grant_bool" public : P.t * string * bool -> int;
   val c_jwt_add_grants_json =
     _import "jwt_add_grants_json" public : P.t * string -> int;
+  val c_jwt_del_grant = _import "jwt_del_grants" public : P.t * string -> int;
+  val c_jwt_del_grants = _import "jwt_del_grants" public : P.t * P.t -> int;
   val c_errno = _import "custom_errno" public : unit -> int;
   val ENOENT = 2
 
@@ -80,6 +84,16 @@ struct
       let val r = c_jwt_get_grant_bool (t, key)
       in if c_errno () = ENOENT then NONE else SOME r
       end)
+  fun getGrantsJson t (SOME key) =
+        F.withValue (t, fn t =>
+          let val p = c_jwt_get_grants_json (t, key)
+          in if p = P.null then NONE else SOME (fetchCString p)
+          end)
+    | getGrantsJson t NONE =
+        F.withValue (t, fn t =>
+          let val p = c_jwt_get_grants_json2 (t, P.null)
+          in if p = P.null then NONE else SOME (fetchCString p)
+          end)
   fun addGrant t key value =
     F.withValue (t, fn t => check "addGrant" (c_jwt_add_grant (t, key, value)))
   fun addGrantInt t key value =
@@ -91,6 +105,10 @@ struct
   fun addGrantsJson t json =
     F.withValue (t, fn t =>
       check "addGrantsJson" (c_jwt_add_grants_json (t, json)))
+  fun delGrant t key =
+    F.withValue (t, fn t => check "delGrant" (c_jwt_del_grant (t, key)))
+  fun delGrants t =
+    F.withValue (t, fn t => check "delGrants" (c_jwt_del_grants (t, P.null)))
 end
 
 type str_option = string option
@@ -121,3 +139,11 @@ val () = Jwt.addGrantInt jwt "life" 42
 val () = print (showInt_option (Jwt.getGrantInt jwt "life") ^ "\n")
 val () = Jwt.addGrantBool jwt "foo" true
 val () = print (showBool_option (Jwt.getGrantBool jwt "foo") ^ "\n")
+val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
+val () = print (showStr_option (Jwt.getGrantsJson jwt (SOME "life")) ^ "\n")
+val () = Jwt.addGrantsJson jwt "{\"a\": \"b\",\"c\": 100}"
+val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
+val () = Jwt.delGrant jwt "c"
+val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
+val () = Jwt.delGrants jwt
+val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")

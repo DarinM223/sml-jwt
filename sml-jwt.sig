@@ -21,7 +21,7 @@ sig
   val getGrant: t -> string -> string option
   val getGrantInt: t -> string -> int option
   val getGrantBool: t -> string -> bool option
-  val getGrantsJson: key -> t -> string option
+  val getGrantsJson: t -> key option -> string option
 
   val addGrant: t -> string -> string -> unit
   val addGrantInt: t -> string -> int -> unit
