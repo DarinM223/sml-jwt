@@ -32,7 +32,7 @@ sig
   val delGrants: t -> unit
 
   val encode: t -> string
-  val decode: key -> string -> t
+  val decode: key option -> string -> t
 
   val setAlg: key -> t -> algorithm option -> unit
   val getAlg: t -> algorithm option

@@ -39,6 +39,9 @@ struct
     _import "jwt_add_grants_json" public : P.t * string -> int;
   val c_jwt_del_grant = _import "jwt_del_grants" public : P.t * string -> int;
   val c_jwt_del_grants = _import "jwt_del_grants" public : P.t * P.t -> int;
+  val c_jwt_encode = _import "jwt_encode_str" public : P.t -> P.t;
+  val c_jwt_decode =
+    _import "jwt_decode" public : P.t ref * string * string * int -> int;
   val c_errno = _import "custom_errno" public : unit -> int;
   val ENOENT = 2
 
@@ -109,25 +112,33 @@ struct
     F.withValue (t, fn t => check "delGrant" (c_jwt_del_grant (t, key)))
   fun delGrants t =
     F.withValue (t, fn t => check "delGrants" (c_jwt_del_grants (t, P.null)))
+  fun encode t =
+    F.withValue (t, fn t =>
+      let val p = c_jwt_encode t
+      in if p = P.null then raise JwtError ("encode", ~1) else fetchCString p
+      end)
+  fun decode key s =
+    let
+      val p = ref P.null
+      val (key, key_len) =
+        case key of
+          SOME key => (key, String.size key)
+        | NONE => ("", 0)
+      val () = check "decode" (c_jwt_decode (p, s, key, key_len))
+      val jwt_ptr = F.new (!p)
+    in
+      F.addFinalizer (jwt_ptr, c_jwt_free);
+      jwt_ptr
+    end
 end
 
-type str_option = string option
 local
   fun showOption f (SOME s) = "SOME " ^ f s
     | showOption _ NONE = "NONE"
-in val showStr_option = showOption (fn t0 => "\"" ^ t0 ^ "\"")
-end
-type int_option = int option
-local
-  fun showOption f (SOME s) = "SOME " ^ f s
-    | showOption _ NONE = "NONE"
-in val showInt_option = showOption Int.toString
-end
-type bool_option = bool option
-local
-  fun showOption f (SOME s) = "SOME " ^ f s
-    | showOption _ NONE = "NONE"
-in val showBool_option = showOption Bool.toString
+in
+  val showStr_option = showOption (fn t0 => "\"" ^ t0 ^ "\"")
+  val showInt_option = showOption Int.toString
+  val showBool_option = showOption Bool.toString
 end
 
 val jwt = Jwt.create ()
@@ -145,5 +156,9 @@ val () = Jwt.addGrantsJson jwt "{\"a\": \"b\",\"c\": 100}"
 val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
 val () = Jwt.delGrant jwt "c"
 val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
+val s = Jwt.encode jwt
+val () = print (s ^ "\n")
+val jwt2 = Jwt.decode NONE s
+val () = print (showStr_option (Jwt.getGrantsJson jwt2 NONE) ^ "\n")
 val () = Jwt.delGrants jwt
 val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
