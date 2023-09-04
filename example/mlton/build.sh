@@ -1,0 +1,1 @@
+mlton -default-ann 'allowFFI true' -export-header export.h -target-link-opt linux '-ljwt' example.mlb ../../stubs.c
