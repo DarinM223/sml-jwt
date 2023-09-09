@@ -36,8 +36,6 @@ struct
   val c_errno = _import "custom_errno" public : unit -> int;
   val ENOENT = 2
 
-  fun check s ret =
-    if ret <> 0 then raise JwtError (s, ret) else ()
   fun fetchCString ptr =
     let
       fun loop (i, accum) =
