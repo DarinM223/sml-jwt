@@ -33,7 +33,7 @@ struct
   val c_jwt_set_alg =
     _import "jwt_set_alg" public : P.t * int * string * int -> int;
   val c_jwt_get_alg = _import "jwt_get_alg" public : P.t -> int;
-  val c_errno = _import "custom_errno" public : unit -> int;
+  val c_errno = _import "Posix_Error_getErrno" private : unit -> int;
   val ENOENT = 2
 
   fun fetchCString ptr =
