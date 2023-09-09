@@ -158,7 +158,7 @@ signature LOAD_LIBRARY = sig
   val path : unit -> string
 end
 
-functor MkJwtFn (Library : LOAD_LIBRARY) = struct
+functor MkJwtFn (Library : LOAD_LIBRARY) : JWT = struct
   open Jwt
   open Foreign
 
@@ -172,6 +172,22 @@ functor MkJwtFn (Library : LOAD_LIBRARY) = struct
   val c_jwt_new = buildCall1 (getSymbol lib "jwt_new", cStar cPointer, cInt)
   val c_jwt_free = buildCall1 (getSymbol lib "jwt_free", cPointer, cVoid)
   val c_jwt_dump = buildCall2 (getSymbol lib "jwt_dump_str", (cPointer, cInt), cString)
+  val c_jwt_get_grant = buildCall2 (getSymbol lib "jwt_get_grant", (cPointer, cString), cOptionPtr cString)
+  val c_jwt_get_grant_int = buildCall2 (getSymbol lib "jwt_get_grant_int", (cPointer, cString), cLong)
+  val c_jwt_get_grant_bool = buildCall2 (getSymbol lib "jwt_get_grant_bool", (cPointer, cString), cInt)
+  val c_jwt_get_grants_json = buildCall2 (getSymbol lib "jwt_get_grants_json", (cPointer, cOptionPtr cString), cOptionPtr cString)
+  val c_jwt_add_grant = buildCall3 (getSymbol lib "jwt_add_grant", (cPointer, cString, cString), cInt)
+  val c_jwt_add_grant_int = buildCall3 (getSymbol lib "jwt_add_grant_int", (cPointer, cString, cLong), cInt)
+  val c_jwt_add_grant_bool = buildCall3 (getSymbol lib "jwt_add_grant_bool", (cPointer, cString, cInt), cInt)
+  val c_jwt_add_grants_json = buildCall2 (getSymbol lib "jwt_add_grants_json", (cPointer, cString), cInt)
+  val c_jwt_del_grant = buildCall2 (getSymbol lib "jwt_del_grants", (cPointer, cString), cInt)
+  val c_jwt_del_grants = buildCall2 (getSymbol lib "jwt_del_grants", (cPointer, cPointer), cInt)
+  val c_jwt_encode = buildCall1 (getSymbol lib "jwt_encode_str", cPointer, cOptionPtr cString)
+  val c_jwt_decode = buildCall4 (getSymbol lib "jwt_decode", (cStar cPointer, cString, cOptionPtr cString, cInt), cInt)
+  val c_jwt_set_alg = buildCall4 (getSymbol lib "jwt_set_alg", (cPointer, cInt, cOptionPtr cString, cInt), cInt)
+  val c_jwt_get_alg = buildCall1 (getSymbol lib "jwt_get_alg", cPointer, cInt)
+  val c_errno = buildCall0 (getSymbol lib "custom_errno", (), cInt)
+  val ENOENT = 2
 
   fun create () =
     let
@@ -183,21 +199,83 @@ functor MkJwtFn (Library : LOAD_LIBRARY) = struct
       jwt_ptr
     end
   fun show t = F.withValue (t, fn t => c_jwt_dump (t, 0))
+  fun getGrant t key =
+    F.withValue (t, fn t => c_jwt_get_grant (t, key))
+  fun getGrantInt t key =
+    F.withValue (t, fn t =>
+      let val r = c_jwt_get_grant_int (t, key)
+      in if c_errno () = ENOENT then NONE else SOME r
+      end)
+  fun getGrantBool t key =
+    F.withValue (t, fn t =>
+      let val r = c_jwt_get_grant_bool (t, key)
+      in if c_errno () = ENOENT then NONE else SOME (if r = 0 then false else true)
+      end)
+  fun getGrantsJson t (SOME (Key key)) =
+        F.withValue (t, fn t => c_jwt_get_grants_json (t, SOME key))
+    | getGrantsJson t NONE =
+        F.withValue (t, fn t => c_jwt_get_grants_json (t, NONE))
+  fun addGrant t key value =
+    F.withValue (t, fn t => check "addGrant" (c_jwt_add_grant (t, key, value)))
+  fun addGrantInt t key value =
+    F.withValue (t, fn t =>
+      check "addGrantInt" (c_jwt_add_grant_int (t, key, value)))
+  fun addGrantBool t key value =
+    F.withValue (t, fn t =>
+      check "addGrantBool" (c_jwt_add_grant_bool (t, key, if value then 1 else 0)))
+  fun addGrantsJson t json =
+    F.withValue (t, fn t =>
+      check "addGrantsJson" (c_jwt_add_grants_json (t, json)))
+  fun delGrant t key =
+    F.withValue (t, fn t => check "delGrant" (c_jwt_del_grant (t, key)))
+  fun delGrants t =
+    F.withValue (t, fn t => check "delGrants" (c_jwt_del_grants (t, P.null)))
+  fun encode t =
+    F.withValue (t, fn t =>
+      case c_jwt_encode t of
+        NONE => raise JwtError ("encode", ~1)
+      | SOME s => s)
+  fun decode key s =
+    let
+      val p = ref P.null
+      val (key, key_len) =
+        case key of
+          SOME (Key key) => (SOME key, String.size key)
+        | NONE => (NONE, 0)
+      val () = check "decode" (c_jwt_decode (p, s, key, key_len))
+      val jwt_ptr = F.new (!p)
+    in
+      F.addFinalizer (jwt_ptr, c_jwt_free);
+      jwt_ptr
+    end
+  fun setAlg t key alg =
+    F.withValue (t, fn t =>
+      let
+        val (key, key_len) =
+          case key of
+            SOME (Key key) => (SOME key, String.size key)
+          | NONE => (NONE, 0)
+      in
+        check "setAlg" (c_jwt_set_alg (t, AlgUtils.toInt alg, key, key_len))
+      end)
+  fun getAlg t =
+    F.withValue (t, fn t => AlgUtils.fromInt (c_jwt_get_alg t))
 end
 
-structure TestLibrary = struct
+structure Library = struct
   val pathRef = ref ""
   val path = fn () => !pathRef
 end
 
-val () = TestLibrary.pathRef := "/usr/lib/x86_64-linux-gnu/libjwt.so"
-structure TestJwt = MkJwtFn(TestLibrary)
+val () = Library.pathRef := "/usr/lib/x86_64-linux-gnu/libjwt.so"
+structure Jwt = MkJwtFn(Library)
 
 (*
 To test:
 
 rlwrap poly
 use "sml-jwt.sig";
+use "alg-utils.sml";
 use "sml-jwt.polyml.sml";
 
 *)
