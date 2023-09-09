@@ -2,3 +2,5 @@
 sml-jwt
 example/mlton/example
 export.h
+build.sml
+example/example

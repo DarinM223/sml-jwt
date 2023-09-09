@@ -1,3 +1,4 @@
+#!/bin/bash
 cat > build.sml <<EOL
 structure Unsafe =
 struct
@@ -73,9 +74,44 @@ PolyML.SaveState.saveState "save" );
 *)
 EOL
 
-mlton -stop f sml-jwt.mlb \
+mlton -stop f example.mlb \
     | grep -v ".mlb" \
     | grep -v "/lib/mlton/sml/basis/" \
     | grep -v "/lib/mlton/targets/" \
-    | while read line ; do echo "use \"$line\";" ; done \
+    | grep -v "^main.sml" \
+    | while read line ; do \
+     if [[ $line == *.mlton.sml ]] ; then \
+       if [ -f "${line/%.mlton.sml/.polyml.sml}" ]; then \
+         echo "use \"${line/%.mlton.sml/.polyml.sml}\";" ; \
+       elif [ -f "${line/%.mlton.sml/.default.sml}" ]; then \
+         echo "use \"${line/%.mlton.sml/.default.sml}\";" ; \
+       elif [ -f "${line/%.mlton.sml/.common.sml}" ]; then \
+         echo "use \"${line/%.mlton.sml/.common.sml}\";" ; \
+       elif [ -f "${line/%.mlton.sml/.sml}" ]; then \
+         echo "use \"${line/%.mlton.sml/.sml}\";" ; \
+       fi \
+     elif [[ $line == *.mlton.fun ]] ; then \
+       if [ -f "${line/%.mlton.fun/.polyml.fun}" ]; then \
+         echo "use \"${line/%.mlton.fun/.polyml.fun}\";" ; \
+       elif [ -f "${line/%.mlton.fun/.default.fun}" ]; then \
+         echo "use \"${line/%.mlton.fun/.default.fun}\";" ; \
+       elif [ -f "${line/%.mlton.fun/.common.fun}" ]; then \
+         echo "use \"${line/%.mlton.fun/.common.fun}\";" ; \
+       elif [ -f "${line/%.mlton.fun/.fun}" ]; then \
+         echo "use \"${line/%.mlton.fun/.fun}\";" ; \
+       fi \
+     elif [[ $line == *.mlton.sig ]] ; then \
+       if [ -f "${line/%.mlton.sig/.polyml.sig}" ]; then \
+         echo "use \"${line/%.mlton.sig/.polyml.sig}\";" ; \
+       elif [ -f "${line/%.mlton.sig/.default.sig}" ]; then \
+         echo "use \"${line/%.mlton.sig/.default.sig}\";" ; \
+       elif [ -f "${line/%.mlton.sig/.common.sig}" ]; then \
+         echo "use \"${line/%.mlton.sig/.common.sig}\";" ; \
+       elif [ -f "${line/%.mlton.sig/.sig}" ]; then \
+         echo "use \"${line/%.mlton.sig/.sig}\";" ; \
+       fi \
+     else\
+       echo "use \"$line\";" ; \
+     fi \
+    done \
     >> build.sml
