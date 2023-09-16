@@ -141,12 +141,10 @@ struct
     end
 end
 
-signature LOAD_LIBRARY =
-sig
-  val path: unit -> string
-end
+functor MkLibraryFn (val path: string) =
+struct val lib = Foreign.loadLibrary path end
 
-functor MkJwtFn(Library: LOAD_LIBRARY): JWT =
+functor MkJwtFn (val lib: Foreign.library): JWT =
 struct
   open Jwt
   open Foreign
@@ -155,8 +153,6 @@ struct
   structure F = Finalizable
 
   type t = P.voidStar F.t
-
-  val lib = loadLibrary (Library.path ())
 
   val c_jwt_new = buildCall1 (getSymbol lib "jwt_new", cStar cPointer, cInt)
   val c_jwt_free = buildCall1 (getSymbol lib "jwt_free", cPointer, cVoid)
@@ -279,16 +275,6 @@ struct
     F.withValue (t, fn t => AlgUtils.fromInt (c_jwt_get_alg t))
 end
 
-structure Library = struct val pathRef = ref "" val path = fn () => !pathRef end
-
-(*
-To test:
-
-rlwrap poly
-use "sml-jwt.sig";
-use "alg-utils.sml";
-use "sml-jwt.polyml.sml";
-
-*)
-val () = Library.pathRef := "/usr/lib/x86_64-linux-gnu/libjwt.so"
+structure Library =
+  MkLibraryFn(val path = "/usr/lib/x86_64-linux-gnu/libjwt.so")
 structure Jwt = MkJwtFn(Library)
