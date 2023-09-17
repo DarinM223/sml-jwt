@@ -6,6 +6,8 @@ struct
   exception Exn
   fun getCtx () : foreignptr = prim ("__get_ctx", ())
 
+  val null: string = prim ("sml_null", ())
+
   fun create () : t =
     prim ("c_jwt_new", (getCtx (), JwtError ("create", ~1)))
   fun free t = prim ("jwt_free", t)
@@ -25,7 +27,7 @@ struct
       val (key, key_len) =
         case key of
           SOME (Key key) => (key, String.size key)
-        | NONE => (prim ("sml_null", ()), 0)
+        | NONE => (null, 0)
     in
       SOME (prim ("c_jwt_get_grants_json", (getCtx (), t, key, key_len, Exn)))
     end
@@ -51,10 +53,7 @@ struct
   fun delGrant t key =
     prim ("c_jwt_del_grants", (getCtx (), t, key, JwtError ("delGrant", ~1)))
   fun delGrants t =
-    prim
-      ( "c_jwt_del_grants"
-      , (getCtx (), t, prim ("sml_null", ()), JwtError ("delGrants", ~1))
-      )
+    prim ("c_jwt_del_grants", (getCtx (), t, null, JwtError ("delGrants", ~1)))
   fun encode t : string =
     prim ("c_jwt_encode", (getCtx (), t, JwtError ("encode", ~1)))
   fun decode key s : t =
@@ -62,7 +61,7 @@ struct
       val (key, key_len) =
         case key of
           SOME (Key key) => (key, String.size key)
-        | NONE => (prim ("sml_null", ()), 0)
+        | NONE => (null, 0)
     in
       prim
         ( "c_jwt_decode"
@@ -74,7 +73,7 @@ struct
       val (key, key_len) =
         case key of
           SOME (Key key) => (key, String.size key)
-        | NONE => (prim ("sml_null", ()), 0)
+        | NONE => (null, 0)
     in
       prim
         ( "c_jwt_set_alg"

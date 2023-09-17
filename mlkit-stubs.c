@@ -21,6 +21,10 @@ uintptr_t c_jwt_new(Context ctx, uintptr_t exn)
 
 uintptr_t c_jwt_show(Region strRho, Context ctx, uintptr_t jwt, uintptr_t exn)
 {
+  if (is_inf_and_atbot(strRho))
+  {
+    resetRegion(strRho);
+  }
   char *result = jwt_dump_str((jwt_t *)jwt, 0);
   if (result == NULL)
   {
@@ -43,6 +47,10 @@ uintptr_t c_jwt_get_grant(Region strRho, Context ctx, uintptr_t jwt, String key,
     return 0;
   }
 
+  if (is_inf_and_atbot(strRho))
+  {
+    resetRegion(strRho);
+  }
   String mlResult = convertStringToML(strRho, result);
   return (uintptr_t)mlResult;
 }
@@ -91,6 +99,10 @@ uintptr_t c_jwt_get_grants_json(Region strRho, Context ctx, uintptr_t jwt, Strin
   {
     raise_exn(ctx, exn);
     return 0;
+  }
+  if (is_inf_and_atbot(strRho))
+  {
+    resetRegion(strRho);
   }
   String mlResult = convertStringToML(strRho, result);
   free((void *)result);
@@ -167,6 +179,10 @@ void c_jwt_del_grants(Context ctx, uintptr_t jwt, String key, uintptr_t exn)
 
 uintptr_t c_jwt_encode(Region strRho, Context ctx, uintptr_t jwt, uintptr_t exn)
 {
+  if (is_inf_and_atbot(strRho))
+  {
+    resetRegion(strRho);
+  }
   char *result = jwt_encode_str((jwt_t *)jwt);
   if (result == NULL)
   {
