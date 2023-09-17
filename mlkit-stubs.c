@@ -203,3 +203,30 @@ uintptr_t c_jwt_decode(Context ctx, String token, long token_len, String key, lo
   }
   return (uintptr_t)jwt;
 }
+
+void c_jwt_set_alg(Context ctx, uintptr_t jwt, long alg, String key, long key_len, uintptr_t exn)
+{
+  alg = convertIntToC(alg);
+  int result;
+  if (key == NULL)
+  {
+    result = jwt_set_alg((jwt_t *)jwt, (jwt_alg_t)alg, NULL, 0);
+  }
+  else
+  {
+    key_len = convertIntToC(key_len);
+    char cKey[key_len + 1];
+    convertStringToC(ctx, key, cKey, key_len + 1, exn);
+    result = jwt_set_alg((jwt_t *)jwt, (jwt_alg_t)alg, cKey, key_len);
+  }
+  if (result != 0)
+  {
+    raise_exn(ctx, exn);
+  }
+}
+
+long c_jwt_get_alg(uintptr_t jwt)
+{
+  long result = jwt_get_alg((jwt_t *)jwt);
+  return convertIntToML(result);
+}
