@@ -1,5 +1,8 @@
 .vscode/
+MLB/
 sml-jwt
+run
+libstubs.a
 example/mlton/example
 export.h
 build.sml

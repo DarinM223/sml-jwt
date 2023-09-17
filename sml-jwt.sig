@@ -16,6 +16,8 @@ sig
   | TERM
 
   val create: unit -> t
+  (* on implementations with finalizers, this is a noop *)
+  val free: t -> unit
   val show: t -> string
 
   val getGrant: t -> string -> string option

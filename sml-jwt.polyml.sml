@@ -206,6 +206,7 @@ struct
       F.addFinalizer (jwt_ptr, c_jwt_free);
       jwt_ptr
     end
+  fun free _ = ()
   fun show t =
     F.withValue (t, fn t => c_jwt_dump (t, 0))
   fun getGrant t key =
