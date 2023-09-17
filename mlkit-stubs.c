@@ -107,3 +107,38 @@ void c_jwt_add_grant(Context ctx, uintptr_t jwt, String key, String value, uintp
     raise_exn(ctx, exn);
   }
 }
+
+void c_jwt_add_grant_int(Context ctx, uintptr_t jwt, String key, long value, uintptr_t exn)
+{
+  char cKey[1000];
+  convertStringToC(ctx, key, cKey, 1000, exn);
+  value = convertIntToC(value);
+  int result = jwt_add_grant_int((jwt_t *)jwt, cKey, value);
+  if (result != 0)
+  {
+    raise_exn(ctx, exn);
+  }
+}
+
+void c_jwt_add_grant_bool(Context ctx, uintptr_t jwt, String key, int value, uintptr_t exn)
+{
+  char cKey[1000];
+  convertStringToC(ctx, key, cKey, 1000, exn);
+  value = convertBoolToC(value);
+  int result = jwt_add_grant_bool((jwt_t *)jwt, cKey, value);
+  if (result != 0)
+  {
+    raise_exn(ctx, exn);
+  }
+}
+
+void c_jwt_add_grants_json(Context ctx, uintptr_t jwt, String json, uintptr_t exn)
+{
+  char cJson[1000];
+  convertStringToC(ctx, json, cJson, 1000, exn);
+  int result = jwt_add_grants_json((jwt_t *)jwt, cJson);
+  if (result != 0)
+  {
+    raise_exn(ctx, exn);
+  }
+}

@@ -7,12 +7,10 @@ struct
   fun getCtx () : foreignptr = prim ("__get_ctx", ())
 
   fun create () : t =
-    prim ("c_jwt_new", (getCtx (), Exn))
-    handle Exn => raise JwtError ("create", ~1)
+    prim ("c_jwt_new", (getCtx (), JwtError ("create", ~1)))
   fun free t = prim ("jwt_free", t)
   fun show t : string =
-    prim ("c_jwt_show", (getCtx (), t, Exn))
-    handle Exn => raise (JwtError ("show", ~1))
+    prim ("c_jwt_show", (getCtx (), t, JwtError ("show", ~1)))
   fun getGrant t key : string option =
     SOME (prim ("c_jwt_get_grant", (getCtx (), t, key, Exn)))
     handle Exn => NONE
@@ -33,8 +31,23 @@ struct
     end
     handle Exn => NONE
   fun addGrant t key value : unit =
-    prim ("c_jwt_add_grant", (getCtx (), t, key, value, Exn))
-    handle Exn => raise (JwtError ("addGrant", ~1))
+    prim
+      ("c_jwt_add_grant", (getCtx (), t, key, value, JwtError ("addGrant", ~1)))
+  fun addGrantInt t key value : unit =
+    prim
+      ( "c_jwt_add_grant_int"
+      , (getCtx (), t, key, value, JwtError ("addGrantInt", ~1))
+      )
+  fun addGrantBool t key value : unit =
+    prim
+      ( "c_jwt_add_grant_bool"
+      , (getCtx (), t, key, value, JwtError ("addGrantBool", ~1))
+      )
+  fun addGrantsJson t json =
+    prim
+      ( "c_jwt_add_grants_json"
+      , (getCtx (), t, json, JwtError ("addGrantsJson", ~1))
+      )
 end
 
 local
@@ -51,9 +64,13 @@ val jwt: Jwt.t = Jwt.create ()
 val () = print (Jwt.show jwt ^ "\n")
 val () = Jwt.addGrant jwt "hello" "world"
 val () = print (showStr_option (Jwt.getGrant jwt "hello") ^ "\n")
+val () = Jwt.addGrantInt jwt "foo" 120
 val () = print (showInt_option (Jwt.getGrantInt jwt "foo") ^ "\n")
+val () = Jwt.addGrantBool jwt "bar" true
 val () = print (showBool_option (Jwt.getGrantBool jwt "bar") ^ "\n")
 val () = print
   (showStr_option (Jwt.getGrantsJson jwt (SOME (Jwt.Key "hello"))) ^ "\n")
+val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
+val () = Jwt.addGrantsJson jwt "{\"blah\": 23, \"abc\": \"def\"}"
 val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
 val () = Jwt.free jwt
