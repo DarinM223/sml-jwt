@@ -22,15 +22,15 @@ struct
     handle Exn => NONE
   fun getGrantsJson t key : string option =
     let
-      val key =
+      val (key, key_len) =
         case key of
-          SOME (Key key) => key
-        | NONE => prim ("sml_null", ())
+          SOME (Key key) => (key, String.size key)
+        | NONE => (prim ("sml_null", ()), 0)
     in
-      SOME (prim ("c_jwt_get_grants_json", (getCtx (), t, key, Exn)))
+      SOME (prim ("c_jwt_get_grants_json", (getCtx (), t, key, key_len, Exn)))
     end
     handle Exn => NONE
-  fun addGrant t key value : unit =
+  fun addGrant t key value =
     prim
       ("c_jwt_add_grant", (getCtx (), t, key, value, JwtError ("addGrant", ~1)))
   fun addGrantInt t key value : unit =
@@ -38,7 +38,7 @@ struct
       ( "c_jwt_add_grant_int"
       , (getCtx (), t, key, value, JwtError ("addGrantInt", ~1))
       )
-  fun addGrantBool t key value : unit =
+  fun addGrantBool t key value =
     prim
       ( "c_jwt_add_grant_bool"
       , (getCtx (), t, key, value, JwtError ("addGrantBool", ~1))
@@ -46,8 +46,29 @@ struct
   fun addGrantsJson t json =
     prim
       ( "c_jwt_add_grants_json"
-      , (getCtx (), t, json, JwtError ("addGrantsJson", ~1))
+      , (getCtx (), t, json, String.size json, JwtError ("addGrantsJson", ~1))
       )
+  fun delGrant t key =
+    prim ("c_jwt_del_grants", (getCtx (), t, key, JwtError ("delGrant", ~1)))
+  fun delGrants t =
+    prim
+      ( "c_jwt_del_grants"
+      , (getCtx (), t, prim ("sml_null", ()), JwtError ("delGrants", ~1))
+      )
+  fun encode t : string =
+    prim ("c_jwt_encode", (getCtx (), t, JwtError ("encode", ~1)))
+  fun decode key s : t =
+    let
+      val (key, key_len) =
+        case key of
+          SOME (Key key) => (key, String.size key)
+        | NONE => (prim ("sml_null", ()), 0)
+    in
+      prim
+        ( "c_jwt_decode"
+        , (getCtx (), s, String.size s, key, key_len, JwtError ("decode", ~1))
+        )
+    end
 end
 
 local
@@ -73,4 +94,15 @@ val () = print
 val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
 val () = Jwt.addGrantsJson jwt "{\"blah\": 23, \"abc\": \"def\"}"
 val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
+
+val () = print (Jwt.encode jwt ^ "\n")
+val jwt' = Jwt.decode NONE (Jwt.encode jwt)
+val () = print (showStr_option (Jwt.getGrantsJson jwt' NONE) ^ "\n")
+val () = Jwt.free jwt'
+
+val () = Jwt.delGrant jwt "hello"
+val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
+val () = Jwt.delGrants jwt
+val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
+
 val () = Jwt.free jwt

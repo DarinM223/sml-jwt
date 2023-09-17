@@ -73,7 +73,7 @@ int c_jwt_get_grant_bool(Context ctx, uintptr_t jwt, String key, uintptr_t exn)
   return convertBoolToML(result);
 }
 
-uintptr_t c_jwt_get_grants_json(Region strRho, Context ctx, uintptr_t jwt, String key, uintptr_t exn)
+uintptr_t c_jwt_get_grants_json(Region strRho, Context ctx, uintptr_t jwt, String key, long key_len, uintptr_t exn)
 {
   char *result = NULL;
   if (key == NULL)
@@ -82,8 +82,9 @@ uintptr_t c_jwt_get_grants_json(Region strRho, Context ctx, uintptr_t jwt, Strin
   }
   else
   {
-    char cKey[1000];
-    convertStringToC(ctx, key, cKey, 1000, exn);
+    key_len = convertIntToC(key_len);
+    char cKey[key_len + 1];
+    convertStringToC(ctx, key, cKey, key_len + 1, exn);
     result = jwt_get_grants_json((jwt_t *)jwt, cKey);
   }
   if (result == NULL)
@@ -92,6 +93,7 @@ uintptr_t c_jwt_get_grants_json(Region strRho, Context ctx, uintptr_t jwt, Strin
     return 0;
   }
   String mlResult = convertStringToML(strRho, result);
+  free((void *)result);
   return (uintptr_t)mlResult;
 }
 
@@ -132,13 +134,72 @@ void c_jwt_add_grant_bool(Context ctx, uintptr_t jwt, String key, int value, uin
   }
 }
 
-void c_jwt_add_grants_json(Context ctx, uintptr_t jwt, String json, uintptr_t exn)
+void c_jwt_add_grants_json(Context ctx, uintptr_t jwt, String json, long json_size, uintptr_t exn)
 {
-  char cJson[1000];
-  convertStringToC(ctx, json, cJson, 1000, exn);
+  json_size = convertIntToC(json_size);
+  char cJson[json_size + 1];
+  convertStringToC(ctx, json, cJson, json_size + 1, exn);
   int result = jwt_add_grants_json((jwt_t *)jwt, cJson);
   if (result != 0)
   {
     raise_exn(ctx, exn);
   }
+}
+
+void c_jwt_del_grants(Context ctx, uintptr_t jwt, String key, uintptr_t exn)
+{
+  int result;
+  if (key == NULL)
+  {
+    result = jwt_del_grants((jwt_t *)jwt, NULL);
+  }
+  else
+  {
+    char cKey[1000];
+    convertStringToC(ctx, key, cKey, 1000, exn);
+    result = jwt_del_grants((jwt_t *)jwt, cKey);
+  }
+  if (result != 0)
+  {
+    raise_exn(ctx, exn);
+  }
+}
+
+uintptr_t c_jwt_encode(Region strRho, Context ctx, uintptr_t jwt, uintptr_t exn)
+{
+  char *result = jwt_encode_str((jwt_t *)jwt);
+  if (result == NULL)
+  {
+    raise_exn(ctx, exn);
+    return 0;
+  }
+  String mlResult = convertStringToML(strRho, result);
+  free((void *)result);
+  return (uintptr_t)mlResult;
+}
+
+uintptr_t c_jwt_decode(Context ctx, String token, long token_len, String key, long key_len, uintptr_t exn)
+{
+  token_len = convertIntToC(token_len);
+  char cToken[token_len + 1];
+  convertStringToC(ctx, token, cToken, token_len + 1, exn);
+  int result;
+  jwt_t *jwt = NULL;
+  if (key == NULL)
+  {
+    result = jwt_decode(&jwt, cToken, NULL, 0);
+  }
+  else
+  {
+    key_len = convertIntToC(key_len);
+    char cKey[key_len + 1];
+    convertStringToC(ctx, key, cKey, key_len + 1, exn);
+    result = jwt_decode(&jwt, cToken, cKey, key_len);
+  }
+  if (result != 0)
+  {
+    raise_exn(ctx, exn);
+    return 0;
+  }
+  return (uintptr_t)jwt;
 }
