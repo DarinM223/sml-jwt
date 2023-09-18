@@ -26,9 +26,13 @@ fun main () =
     val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
     val () = Jwt.delGrant jwt "c"
     val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
-    val s = Jwt.encode jwt
-    val () = print (s ^ "\n")
-    val jwt2 = Jwt.decode NONE s
+    val jwt2 =
+      let
+        val s = Jwt.encode jwt
+        val () = print (s ^ "\n")
+      in
+        Jwt.decode NONE s
+      end
     val () = print (showStr_option (Jwt.getGrantsJson jwt2 NONE) ^ "\n")
     val () = Jwt.delGrants jwt
     val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
