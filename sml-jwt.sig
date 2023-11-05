@@ -1,4 +1,4 @@
-signature JwtGrants =
+signature JWT_GRANTS =
 sig
   type t
   datatype key = Key of string
@@ -19,7 +19,7 @@ end
 
 signature JWT =
 sig
-  include JwtGrants
+  include JWT_GRANTS
   datatype algorithm =
     HS256
   | HS384
@@ -44,9 +44,9 @@ sig
   val getAlg: t -> algorithm option
 end
 
-signature JWTValid =
+signature JWT_VALID =
 sig
-  include JwtGrants
+  include JWT_GRANTS
   type jwt
 
   datatype validation_error =
@@ -66,11 +66,11 @@ sig
   val create: unit -> t
   val free: t -> unit
 
-  val getExpLeeway: t -> C_Time.t
-  val setExpLeeway: t -> C_Time.t -> unit
-  val getNbfLeeway: t -> C_Time.t
-  val setNbfLeeway: t -> C_Time.t -> unit
-  val setNow: t -> C_Time.t -> unit
+  val getExpLeeway: t -> Time.time
+  val setExpLeeway: t -> Time.time -> unit
+  val getNbfLeeway: t -> Time.time
+  val setNbfLeeway: t -> Time.time -> unit
+  val setNow: t -> Time.time -> unit
   val validate: jwt -> t -> unit
   val hasError: error -> validation_error -> bool
 end
