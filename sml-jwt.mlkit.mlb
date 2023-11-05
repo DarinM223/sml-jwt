@@ -1,4 +1,4 @@
 $(SML_LIB)/basis/basis.mlb
 sml-jwt.sig
-alg-utils.sml
+utils.sml
 sml-jwt.mlkit.sml

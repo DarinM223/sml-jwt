@@ -1,8 +1,9 @@
 $(SML_LIB)/basis/basis.mlb
 $(SML_LIB)/basis/mlton.mlb
+$(SML_LIB)/basis/primitive/primitive.mlb
 $(SML_LIB)/basis/c-types.mlb
 sml-jwt.sig
-alg-utils.sml
+utils.sml
 ann "milletDiagnosticsIgnore all" in
   sml-jwt.mlton.sml
 end

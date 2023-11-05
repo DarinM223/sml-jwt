@@ -1,6 +1,23 @@
+structure FFIUtils =
+struct
+  fun fetchCString ptr =
+    let
+      fun loop (i, accum) =
+        let
+          val w = MLton.Pointer.getWord8 (ptr, i)
+        in
+          (* Search for explicit null termination. *)
+          if w = 0wx0 then String.implode (List.rev accum)
+          else loop (i + 1, Byte.byteToChar w :: accum)
+        end
+    in
+      loop (0, [])
+    end
+end
+
 structure Jwt: JWT =
 struct
-  open Jwt
+  open Jwt FFIUtils
   structure P = MLton.Pointer
   structure F = MLton.Finalizable
   type t = P.t F.t
@@ -35,20 +52,6 @@ struct
   val c_jwt_get_alg = _import "jwt_get_alg" public : P.t -> int;
   val c_errno = _import "Posix_Error_getErrno" private : unit -> int;
   val ENOENT = 2
-
-  fun fetchCString ptr =
-    let
-      fun loop (i, accum) =
-        let
-          val w = P.getWord8 (ptr, i)
-        in
-          (* Search for explicit null termination. *)
-          if w = 0wx0 then String.implode (List.rev accum)
-          else loop (i + 1, Byte.byteToChar w :: accum)
-        end
-    in
-      loop (0, [])
-    end
 
   fun create () =
     let

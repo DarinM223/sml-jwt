@@ -38,3 +38,29 @@ struct
      | Jwt.ES512 => "ES512"
      | Jwt.TERM => "TERM"
 end
+
+structure ValidUtils =
+struct
+  fun toInt JwtValid.Error = 0x0001
+    | toInt JwtValid.AlgMismatch = 0x0002
+    | toInt JwtValid.Expired = 0x0004
+    | toInt JwtValid.TooNew = 0x0008
+    | toInt JwtValid.IssMismatch = 0x0010
+    | toInt JwtValid.SubMismatch = 0x0020
+    | toInt JwtValid.AudMismatch = 0x0040
+    | toInt JwtValid.GrantMissing = 0x0080
+    | toInt JwtValid.GrantMismatch = 0x0100
+
+  fun fromInt 0x0000 = NONE
+    | fromInt 0x0001 = SOME JwtValid.Error
+    | fromInt 0x0002 = SOME JwtValid.AlgMismatch
+    | fromInt 0x0004 = SOME JwtValid.Expired
+    | fromInt 0x0008 = SOME JwtValid.TooNew
+    | fromInt 0x0010 = SOME JwtValid.IssMismatch
+    | fromInt 0x0020 = SOME JwtValid.SubMismatch
+    | fromInt 0x0040 = SOME JwtValid.AudMismatch
+    | fromInt 0x0080 = SOME JwtValid.GrantMissing
+    | fromInt 0x0100 = SOME JwtValid.GrantMismatch
+    | fromInt _ =
+        raise JwtValid.JwtError ("fromInt", ~1)
+end

@@ -1,8 +1,25 @@
-signature JWT =
+signature JwtGrants =
 sig
-  exception JwtError of string * int
   type t
   datatype key = Key of string
+  exception JwtError of string * int
+  val getGrant: t -> string -> string option
+  val getGrantInt: t -> string -> int option
+  val getGrantBool: t -> string -> bool option
+  val getGrantsJson: t -> key option -> string option
+
+  val addGrant: t -> string -> string -> unit
+  val addGrantInt: t -> string -> int -> unit
+  val addGrantBool: t -> string -> bool -> unit
+  val addGrantsJson: t -> string -> unit
+
+  val delGrant: t -> string -> unit
+  val delGrants: t -> unit
+end
+
+signature JWT =
+sig
+  include JwtGrants
   datatype algorithm =
     HS256
   | HS384
@@ -20,19 +37,6 @@ sig
   val free: t -> unit
   val show: t -> string
 
-  val getGrant: t -> string -> string option
-  val getGrantInt: t -> string -> int option
-  val getGrantBool: t -> string -> bool option
-  val getGrantsJson: t -> key option -> string option
-
-  val addGrant: t -> string -> string -> unit
-  val addGrantInt: t -> string -> int -> unit
-  val addGrantBool: t -> string -> bool -> unit
-  val addGrantsJson: t -> string -> unit
-
-  val delGrant: t -> string -> unit
-  val delGrants: t -> unit
-
   val encode: t -> string
   val decode: key option -> string -> t
 
@@ -40,10 +44,41 @@ sig
   val getAlg: t -> algorithm option
 end
 
+signature JWTValid =
+sig
+  include JwtGrants
+  type jwt
+
+  datatype validation_error =
+    Error
+  | AlgMismatch
+  | Expired
+  | TooNew
+  | IssMismatch
+  | SubMismatch
+  | AudMismatch
+  | GrantMissing
+  | GrantMismatch
+
+  type error
+  exception ValidationError of error
+
+  val create: unit -> t
+  val free: t -> unit
+
+  val getExpLeeway: t -> C_Time.t
+  val setExpLeeway: t -> C_Time.t -> unit
+  val getNbfLeeway: t -> C_Time.t
+  val setNbfLeeway: t -> C_Time.t -> unit
+  val setNow: t -> C_Time.t -> unit
+  val validate: jwt -> t -> unit
+  val hasError: error -> validation_error -> bool
+end
+
 structure Jwt =
 struct
-  exception JwtError of string * int
   datatype key = Key of string
+  exception JwtError of string * int
   datatype algorithm =
     HS256
   | HS384
@@ -58,4 +93,21 @@ struct
 
   fun check s ret =
     if ret <> 0 then raise JwtError (s, ret) else ()
+end
+
+structure JwtValid =
+struct
+  datatype key = Key of string
+  exception JwtError of string * int
+
+  datatype validation_error =
+    Error
+  | AlgMismatch
+  | Expired
+  | TooNew
+  | IssMismatch
+  | SubMismatch
+  | AudMismatch
+  | GrantMissing
+  | GrantMismatch
 end
