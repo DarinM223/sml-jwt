@@ -276,6 +276,148 @@ struct
     F.withValue (t, fn t => AlgUtils.fromInt (c_jwt_get_alg t))
 end
 
+functor MkJwtValidFn
+  (val lib: Foreign.library
+   structure Jwt: JWT where type t = Foreign.Memory.voidStar Finalizable.t):
+  JWT_VALID =
+struct
+  open JwtValid
+  open Foreign
+
+  structure P = Memory
+  structure F = Finalizable
+
+  type t = P.voidStar F.t
+  type jwt = Jwt.t
+  type error = Word.word
+  exception ValidationError of error
+
+  val c_jwt_valid_new = buildCall1
+    (getSymbol lib "jwt_valid_new", cStar cPointer, cInt)
+  val c_jwt_valid_free = buildCall1
+    (getSymbol lib "jwt_valid_free", cPointer, cVoid)
+  val c_jwt_valid_get_grant = buildCall2
+    ( getSymbol lib "jwt_valid_get_grant"
+    , (cPointer, cString)
+    , cOptionPtr cString
+    )
+  val c_jwt_valid_get_grant_int = buildCall2
+    (getSymbol lib "jwt_valid_get_grant_int", (cPointer, cString), cLong)
+  val c_jwt_valid_get_grant_bool = buildCall2
+    (getSymbol lib "jwt_valid_get_grant_bool", (cPointer, cString), cInt)
+  val c_jwt_valid_get_grants_json = buildCall2
+    ( getSymbol lib "jwt_valid_get_grants_json"
+    , (cPointer, cOptionPtr cString)
+    , cOptionPtr cString
+    )
+  val c_jwt_valid_add_grant = buildCall3
+    (getSymbol lib "jwt_valid_add_grant", (cPointer, cString, cString), cInt)
+  val c_jwt_valid_add_grant_int = buildCall3
+    (getSymbol lib "jwt_valid_add_grant_int", (cPointer, cString, cLong), cInt)
+  val c_jwt_valid_add_grant_bool = buildCall3
+    (getSymbol lib "jwt_valid_add_grant_bool", (cPointer, cString, cInt), cInt)
+  val c_jwt_valid_add_grants_json = buildCall2
+    (getSymbol lib "jwt_valid_add_grants_json", (cPointer, cString), cInt)
+  val c_jwt_valid_del_grant = buildCall2
+    (getSymbol lib "jwt_valid_del_grants", (cPointer, cString), cInt)
+  val c_jwt_valid_del_grants = buildCall2
+    (getSymbol lib "jwt_valid_del_grants", (cPointer, cPointer), cInt)
+  val c_jwt_valid_get_exp_leeway = buildCall1
+    (getSymbol lib "jwt_valid_get_exp_leeway", cPointer, cLongLarge)
+  val c_jwt_valid_set_exp_leeway = buildCall2
+    (getSymbol lib "jwt_valid_set_exp_leeway", (cPointer, cLongLarge), cInt)
+  val c_jwt_valid_get_nbf_leeway = buildCall1
+    (getSymbol lib "jwt_valid_get_nbf_leeway", cPointer, cLongLarge)
+  val c_jwt_valid_set_nbf_leeway = buildCall2
+    (getSymbol lib "jwt_valid_set_nbf_leeway", (cPointer, cLongLarge), cInt)
+  val c_jwt_valid_set_now = buildCall2
+    (getSymbol lib "jwt_valid_set_now", (cPointer, cLongLarge), cInt)
+  val c_jwt_validate = buildCall2
+    (getSymbol lib "jwt_validate", (cPointer, cPointer), cUint)
+  val c_errno = Error.getLastError
+  val ENOENT = SysWord.fromInt 2
+
+  fun create () =
+    let
+      val p = ref P.null
+      val () = check "create" (c_jwt_valid_new p)
+      val jwt_ptr = F.new (!p)
+    in
+      F.addFinalizer (jwt_ptr, c_jwt_valid_free);
+      jwt_ptr
+    end
+  fun free _ = ()
+  fun getGrant t key =
+    F.withValue (t, fn t => c_jwt_valid_get_grant (t, key))
+  fun getGrantInt t key =
+    F.withValue (t, fn t =>
+      let val r = c_jwt_valid_get_grant_int (t, key)
+      in if c_errno () = ENOENT then NONE else SOME r
+      end)
+  fun getGrantBool t key =
+    F.withValue (t, fn t =>
+      let
+        val r = c_jwt_valid_get_grant_bool (t, key)
+      in
+        if c_errno () = ENOENT then NONE
+        else SOME (if r = 0 then false else true)
+      end)
+  fun getGrantsJson t (SOME (Key key)) =
+        F.withValue (t, fn t => c_jwt_valid_get_grants_json (t, SOME key))
+    | getGrantsJson t NONE =
+        F.withValue (t, fn t => c_jwt_valid_get_grants_json (t, NONE))
+  fun addGrant t key value =
+    F.withValue (t, fn t =>
+      check "addGrant" (c_jwt_valid_add_grant (t, key, value)))
+  fun addGrantInt t key value =
+    F.withValue (t, fn t =>
+      check "addGrantInt" (c_jwt_valid_add_grant_int (t, key, value)))
+  fun addGrantBool t key value =
+    F.withValue (t, fn t =>
+      check "addGrantBool" (c_jwt_valid_add_grant_bool
+        (t, key, if value then 1 else 0)))
+  fun addGrantsJson t json =
+    F.withValue (t, fn t =>
+      check "addGrantsJson" (c_jwt_valid_add_grants_json (t, json)))
+  fun delGrant t key =
+    F.withValue (t, fn t => check "delGrant" (c_jwt_valid_del_grant (t, key)))
+  fun delGrants t =
+    F.withValue (t, fn t =>
+      check "delGrants" (c_jwt_valid_del_grants (t, P.null)))
+
+  local
+    val timeToCTime: Time.time -> LargeInt.int = Time.toSeconds
+    val cTimeToTime: LargeInt.int -> Time.time = Time.fromSeconds
+  in
+    fun getExpLeeway t =
+      F.withValue (t, fn t => cTimeToTime (c_jwt_valid_get_exp_leeway t))
+    fun setExpLeeway t time =
+      F.withValue (t, fn t =>
+        check "setExpLeeway" (c_jwt_valid_set_exp_leeway (t, timeToCTime time)))
+    fun getNbfLeeway t =
+      F.withValue (t, fn t => cTimeToTime (c_jwt_valid_get_nbf_leeway t))
+    fun setNbfLeeway t time =
+      F.withValue (t, fn t =>
+        check "setNbfLeeway" (c_jwt_valid_set_nbf_leeway (t, timeToCTime time)))
+    fun setNow t time =
+      F.withValue (t, fn t =>
+        check "setNow" (c_jwt_valid_set_now (t, timeToCTime time)))
+  end
+
+  fun validate jwt t =
+    F.withValue (jwt, fn jwt =>
+      F.withValue (t, fn t =>
+        let val result = Word.fromInt (c_jwt_validate (jwt, t))
+        in if result = 0w0 then () else raise ValidationError result
+        end))
+  fun hasError error valid_error =
+    if Word.andb (error, Word.fromInt (ValidUtils.toInt valid_error)) = 0w0 then
+      false
+    else
+      true
+end
+
 structure Library =
   MkLibraryFn(val path = "/usr/lib/x86_64-linux-gnu/libjwt.so")
 structure Jwt = MkJwtFn(Library)
+structure JwtValid = MkJwtFn (open Library structure Jwt = Jwt)
