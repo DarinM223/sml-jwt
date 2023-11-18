@@ -110,4 +110,7 @@ struct
   | AudMismatch
   | GrantMissing
   | GrantMismatch
+
+  fun check s ret =
+    if ret <> 0 then raise JwtError (s, ret) else ()
 end
