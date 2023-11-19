@@ -48,6 +48,7 @@ signature JWT_VALID =
 sig
   include JWT_GRANTS
   type jwt
+  type algorithm
 
   datatype validation_error =
     Error
@@ -63,7 +64,7 @@ sig
   type error
   exception ValidationError of error
 
-  val create: unit -> t
+  val create: algorithm option -> t
   val free: t -> unit
 
   val getExpLeeway: t -> Time.time

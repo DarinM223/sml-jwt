@@ -147,10 +147,11 @@ struct
   structure F = MLton.Finalizable
   type t = P.t F.t
   type jwt = Jwt.t
+  type algorithm = Jwt.algorithm
   type error = C_UInt.t
   exception ValidationError of error
 
-  val c_jwt_valid_new = _import "jwt_valid_new" public : P.t ref -> int;
+  val c_jwt_valid_new = _import "jwt_valid_new" public : P.t ref * int -> int;
   val c_jwt_valid_free = _import "jwt_valid_free" public : P.t -> unit;
   val c_jwt_valid_get_grant =
     _import "jwt_valid_get_grant" public : P.t * string -> P.t;
@@ -188,10 +189,10 @@ struct
   val c_errno = _import "Posix_Error_getErrno" private : unit -> int;
   val ENOENT = 2
 
-  fun create () =
+  fun create alg =
     let
       val p = ref P.null
-      val () = check "create" (c_jwt_valid_new p)
+      val () = check "create" (c_jwt_valid_new (p, AlgUtils.toInt alg))
       val jwt_ptr = F.new (!p)
     in
       F.addFinalizer (jwt_ptr, c_jwt_valid_free);

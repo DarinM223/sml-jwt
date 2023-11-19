@@ -89,3 +89,72 @@ struct
   fun getAlg t =
     AlgUtils.fromInt (prim ("c_jwt_get_alg", t))
 end
+
+structure JwtValid =
+struct
+  open JwtValid
+  type t = foreignptr
+  type jwt = Jwt.t
+  type error = int
+  exception ValidationError of error
+
+  exception Exn
+  fun getCtx () : foreignptr = prim ("__get_ctx", ())
+
+  val null: string = prim ("sml_null", ())
+
+  fun create alg : t =
+    prim
+      ( "c_jwt_valid_new"
+      , (getCtx (), AlgUtils.toInt alg, JwtError ("create", ~1))
+      )
+  fun free t = prim ("jwt_valid_free", t)
+  fun getGrant t key : string option =
+    SOME (prim ("c_jwt_valid_get_grant", (getCtx (), t, key, Exn)))
+    handle Exn => NONE
+  fun getGrantInt t key : int option =
+    SOME (prim ("c_jwt_valid_get_grant_int", (getCtx (), t, key, Exn)))
+    handle Exn => NONE
+  fun getGrantBool t key : bool option =
+    SOME (prim ("c_jwt_valid_get_grant_bool", (getCtx (), t, key, Exn)))
+    handle Exn => NONE
+  fun getGrantsJson t key : string option =
+    let
+      val (key, key_len) =
+        case key of
+          SOME (Key key) => (key, String.size key)
+        | NONE => (null, 0)
+    in
+      SOME (prim
+        ("c_jwt_valid_get_grants_json", (getCtx (), t, key, key_len, Exn)))
+    end
+    handle Exn => NONE
+  fun addGrant t key value =
+    prim
+      ( "c_jwt_valid_add_grant"
+      , (getCtx (), t, key, value, JwtError ("addGrant", ~1))
+      )
+  fun addGrantInt t key value : unit =
+    prim
+      ( "c_jwt_valid_add_grant_int"
+      , (getCtx (), t, key, value, JwtError ("addGrantInt", ~1))
+      )
+  fun addGrantBool t key value =
+    prim
+      ( "c_jwt_valid_add_grant_bool"
+      , (getCtx (), t, key, value, JwtError ("addGrantBool", ~1))
+      )
+  fun addGrantsJson t json =
+    prim
+      ( "c_jwt_valid_add_grants_json"
+      , (getCtx (), t, json, String.size json, JwtError ("addGrantsJson", ~1))
+      )
+  fun delGrant t key =
+    prim
+      ("c_jwt_valid_del_grants", (getCtx (), t, key, JwtError ("delGrant", ~1)))
+  fun delGrants t =
+    prim
+      ( "c_jwt_valid_del_grants"
+      , (getCtx (), t, null, JwtError ("delGrants", ~1))
+      )
+end

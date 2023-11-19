@@ -278,7 +278,7 @@ end
 
 functor MkJwtValidFn
   (val lib: Foreign.library
-   structure Jwt: JWT where type t = Foreign.Memory.voidStar Finalizable.t):
+   structure Jwt': JWT where type t = Foreign.Memory.voidStar Finalizable.t):
   JWT_VALID =
 struct
   open JwtValid
@@ -288,12 +288,13 @@ struct
   structure F = Finalizable
 
   type t = P.voidStar F.t
-  type jwt = Jwt.t
+  type jwt = Jwt'.t
+  type algorithm = Jwt.algorithm
   type error = Word.word
   exception ValidationError of error
 
-  val c_jwt_valid_new = buildCall1
-    (getSymbol lib "jwt_valid_new", cStar cPointer, cInt)
+  val c_jwt_valid_new = buildCall2
+    (getSymbol lib "jwt_valid_new", (cStar cPointer, cInt), cInt)
   val c_jwt_valid_free = buildCall1
     (getSymbol lib "jwt_valid_free", cPointer, cVoid)
   val c_jwt_valid_get_grant = buildCall2
@@ -337,10 +338,10 @@ struct
   val c_errno = Error.getLastError
   val ENOENT = SysWord.fromInt 2
 
-  fun create () =
+  fun create alg =
     let
       val p = ref P.null
-      val () = check "create" (c_jwt_valid_new p)
+      val () = check "create" (c_jwt_valid_new (p, AlgUtils.toInt alg))
       val jwt_ptr = F.new (!p)
     in
       F.addFinalizer (jwt_ptr, c_jwt_valid_free);
