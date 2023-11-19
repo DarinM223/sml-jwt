@@ -418,7 +418,6 @@ struct
       true
 end
 
-structure Library =
-  MkLibraryFn(val path = "/usr/lib/x86_64-linux-gnu/libjwt.so")
+structure Library = MkLibraryFn(val path = "/usr/local/lib/libjwt.so")
 structure Jwt = MkJwtFn(Library)
-structure JwtValid = MkJwtFn (open Library structure Jwt = Jwt)
+structure JwtValid = MkJwtValidFn (open Library structure Jwt' = Jwt)
