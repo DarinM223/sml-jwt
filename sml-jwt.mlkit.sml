@@ -90,11 +90,12 @@ struct
     AlgUtils.fromInt (prim ("c_jwt_get_alg", t))
 end
 
-structure JwtValid =
+structure JwtValid: JWT_VALID =
 struct
   open JwtValid
   type t = foreignptr
   type jwt = Jwt.t
+  type algorithm = Jwt.algorithm
   type error = int
   exception ValidationError of error
 
@@ -157,4 +158,33 @@ struct
       ( "c_jwt_valid_del_grants"
       , (getCtx (), t, null, JwtError ("delGrants", ~1))
       )
+  fun getExpLeeway t : Time.time =
+    Time.fromSeconds (prim ("c_jwt_valid_get_exp_leeway", t))
+  fun setExpLeeway t (time: Time.time) : unit =
+    prim
+      ( "c_jwt_valid_set_exp_leeway"
+      , (getCtx (), t, Time.toSeconds time, JwtError ("setExpLeeway", ~1))
+      )
+  fun getNbfLeeway t : Time.time =
+    Time.fromSeconds (prim ("c_jwt_valid_get_nbf_leeway", t))
+  fun setNbfLeeway t (time: Time.time) : unit =
+    prim
+      ( "c_jwt_valid_set_nbf_leeway"
+      , (getCtx (), t, Time.toSeconds time, JwtError ("setNbfLeeway", ~1))
+      )
+  fun setNow t (time: Time.time) : unit =
+    prim
+      ( "c_jwt_valid_set_now"
+      , (getCtx (), t, Time.toSeconds time, JwtError ("setNow", ~1))
+      )
+  fun validate jwt t =
+    let val result = prim ("c_jwt_validate", (jwt, t))
+    in if result = 0 then () else raise ValidationError result
+    end
+  fun hasError error valid_error =
+    if
+      Word.andb
+        (Word.fromInt error, Word.fromInt (ValidUtils.toInt valid_error)) = 0w0
+    then false
+    else true
 end

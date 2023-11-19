@@ -401,3 +401,51 @@ void c_jwt_valid_del_grants(Context ctx, uintptr_t jwt, String key, uintptr_t ex
     raise_exn(ctx, exn);
   }
 }
+
+long c_jwt_valid_get_exp_leeway(uintptr_t jwt)
+{
+  time_t result = jwt_valid_get_exp_leeway((jwt_valid_t *)jwt);
+  return convertIntToML(result);
+}
+
+void c_jwt_valid_set_exp_leeway(Context ctx, uintptr_t jwt, long time, uintptr_t exn)
+{
+  time = convertIntToC(time);
+  int result = jwt_valid_set_exp_leeway((jwt_valid_t *)jwt, time);
+  if (result != 0)
+  {
+    raise_exn(ctx, exn);
+  }
+}
+
+long c_jwt_valid_get_nbf_leeway(uintptr_t jwt)
+{
+  time_t result = jwt_valid_get_nbf_leeway((jwt_valid_t *)jwt);
+  return convertIntToML(result);
+}
+
+void c_jwt_valid_set_nbf_leeway(Context ctx, uintptr_t jwt, long time, uintptr_t exn)
+{
+  time = convertIntToC(time);
+  int result = jwt_valid_set_nbf_leeway((jwt_valid_t *)jwt, time);
+  if (result != 0)
+  {
+    raise_exn(ctx, exn);
+  }
+}
+
+void c_jwt_valid_set_now(Context ctx, uintptr_t jwt, long time, uintptr_t exn)
+{
+  time = convertIntToC(time);
+  int result = jwt_valid_set_now((jwt_valid_t *)jwt, time);
+  if (result != 0)
+  {
+    raise_exn(ctx, exn);
+  }
+}
+
+long c_jwt_validate(uintptr_t jwt, uintptr_t jwt_valid)
+{
+  int result = jwt_validate((jwt_t *) jwt, (jwt_valid_t *) jwt_valid);
+  return convertIntToML(result);
+}
