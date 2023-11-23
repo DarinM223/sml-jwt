@@ -84,8 +84,10 @@ fun main () =
       else raise Fail "First validation should throw expired error"
 
     (* Test that validation succeeds after the exp and nbf leeways are set *)
-    val () = JwtValid.setNbfLeeway jwt_valid (Time.+ (Time.now (), Time.now ()))
-    val () = JwtValid.setExpLeeway jwt_valid (Time.+ (Time.now (), Time.now ()))
+    val () = JwtValid.setNbfLeeway jwt_valid
+      (Time.+ (Time.now (), Time.fromSeconds 100))
+    val () = JwtValid.setExpLeeway jwt_valid
+      (Time.+ (Time.now (), Time.fromSeconds 100))
     val () = JwtValid.validate jwt jwt_valid
   in
     print ("Validated JWT\n")

@@ -115,3 +115,5 @@ mlton -stop f example.mlb \
      fi \
     done \
     >> build.sml
+
+polyc build.sml -o example
