@@ -27,7 +27,7 @@ fun main () =
     val () = Jwt.delGrant jwt "c"
     val () = print (showStr_option (Jwt.getGrantsJson jwt NONE) ^ "\n")
     val s = Jwt.encode jwt
-    val () = print(s ^ "\n")
+    val () = print (s ^ "\n")
     val jwt2 = Jwt.decode NONE s
     val () = print (showStr_option (Jwt.getGrantsJson jwt2 NONE) ^ "\n")
     val () = Jwt.delGrants jwt
@@ -63,6 +63,30 @@ fun main () =
       \-----END RSA PRIVATE KEY-----"
     val () = Jwt.setAlg jwt (SOME (Jwt.Key privateKey)) (SOME Jwt.RS256)
     val () = print (showAlgorithm_option (Jwt.getAlg jwt) ^ "\n")
+
+    val jwt_valid = JwtValid.create (SOME Jwt.RS256)
+    val () = Jwt.addGrantInt jwt "exp" 0
+    val () = JwtValid.setNow jwt_valid (Time.now ())
+
+    (* Test that validation fails if the JWT token is expired *)
+    val caughtError = ref false
+    val () =
+      JwtValid.validate jwt jwt_valid
+      handle JwtValid.ValidationError e =>
+        ( print "Got validation error\n"
+        ; if JwtValid.hasError e JwtValid.Expired then
+            (print "Error is expired, which is expected\n"; caughtError := true)
+          else
+            print "Error should be expired\n"
+        )
+    val () =
+      if !caughtError then ()
+      else raise Fail "First validation should throw expired error"
+
+    (* Test that validation succeeds after the exp and nbf leeways are set *)
+    val () = JwtValid.setNbfLeeway jwt_valid (Time.+ (Time.now (), Time.now ()))
+    val () = JwtValid.setExpLeeway jwt_valid (Time.+ (Time.now (), Time.now ()))
+    val () = JwtValid.validate jwt jwt_valid
   in
-    ()
+    print ("Validated JWT\n")
   end
