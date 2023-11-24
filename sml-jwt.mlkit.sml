@@ -159,24 +159,36 @@ struct
       , (getCtx (), t, null, JwtError ("delGrants", ~1))
       )
   fun getExpLeeway t : Time.time =
-    Time.fromSeconds (prim ("c_jwt_valid_get_exp_leeway", t))
+    Time.fromSeconds (Int.toLarge (prim ("c_jwt_valid_get_exp_leeway", t)))
   fun setExpLeeway t (time: Time.time) : unit =
-    prim
-      ( "c_jwt_valid_set_exp_leeway"
-      , (getCtx (), t, Time.toSeconds time, JwtError ("setExpLeeway", ~1))
-      )
+    let
+      val seconds = Int.fromLarge (Time.toSeconds time)
+    in
+      prim
+        ( "c_jwt_valid_set_exp_leeway"
+        , (getCtx (), t, seconds, JwtError ("setExpLeeway", ~1))
+        )
+    end
   fun getNbfLeeway t : Time.time =
-    Time.fromSeconds (prim ("c_jwt_valid_get_nbf_leeway", t))
+    Time.fromSeconds (Int.toLarge (prim ("c_jwt_valid_get_nbf_leeway", t)))
   fun setNbfLeeway t (time: Time.time) : unit =
-    prim
-      ( "c_jwt_valid_set_nbf_leeway"
-      , (getCtx (), t, Time.toSeconds time, JwtError ("setNbfLeeway", ~1))
-      )
+    let
+      val seconds = Int.fromLarge (Time.toSeconds time)
+    in
+      prim
+        ( "c_jwt_valid_set_nbf_leeway"
+        , (getCtx (), t, seconds, JwtError ("setNbfLeeway", ~1))
+        )
+    end
   fun setNow t (time: Time.time) : unit =
-    prim
-      ( "c_jwt_valid_set_now"
-      , (getCtx (), t, Time.toSeconds time, JwtError ("setNow", ~1))
-      )
+    let
+      val seconds = Int.fromLarge (Time.toSeconds time)
+    in
+      prim
+        ( "c_jwt_valid_set_now"
+        , (getCtx (), t, seconds, JwtError ("setNow", ~1))
+        )
+    end
   fun validate jwt t =
     let val result = prim ("c_jwt_validate", (jwt, t))
     in if result = 0 then () else raise ValidationError result
