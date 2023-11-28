@@ -4,6 +4,8 @@ lib/github.com/DarinM223/sml-jwt/sml-jwt
 lib/github.com/DarinM223/sml-jwt/run
 lib/github.com/DarinM223/sml-jwt/libstubs.a
 lib/github.com/DarinM223/sml-jwt/example/mlton/example
+lib/github.com/DarinM223/sml-jwt/example/build.sml
+lib/github.com/DarinM223/sml-jwt/example/MLB/
 lib/github.com/DarinM223/sml-jwt/export.h
 lib/github.com/DarinM223/sml-jwt/build.sml
 lib/github.com/DarinM223/sml-jwt/example/example
