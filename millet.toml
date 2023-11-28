@@ -1,5 +1,0 @@
-version = 1
-[workspace]
-root = "sml-jwt.mlb"
-[diagnostics]
-5043.severity = "ignore"

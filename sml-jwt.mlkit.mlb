@@ -1,4 +1,0 @@
-$(SML_LIB)/basis/basis.mlb
-sml-jwt.sig
-utils.sml
-sml-jwt.mlkit.sml
